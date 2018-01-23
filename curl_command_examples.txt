@@ -1,0 +1,151 @@
+curl -i -XPOST -H"Content-Type: application/json" localhost:8083/registration -d'{"name": "Pete"}'
+{"id":3,"name":"Conan","info":"registration info"}
+
+
+Find the account associated to the created user.
+curl -i localhost:8083/accounts?ownerId=3
+[{"id":2,"ownerId":3,"name":"Conan's account","info":"account info"}]
+
+
+Create Project A, and Project B using the registration server.
+curl -i -XPOST -H"Content-Type: application/json" localhost:8083/projects -d'{"name": "Project A", "accountId": 2}'
+curl -i -XPOST -H"Content-Type: application/json" localhost:8083/projects -d'{"name": "Project B", "accountId": 2}'
+{"id":2,"accountId":2,"name":"Project A","active":true,"info":"project info"}
+{"id":3,"accountId":2,"name":"Project B","active":true,"info":"project info"}
+
+Create an allocation using Project A's id.
+
+curl -i -XPOST -H"Content-Type: application/json" localhost:8081/allocations/ -d'{"projectId": 2, "userId": 3, "firstDay": "2015-05-17", "lastDay": "2015-05-18"}'
+{"id":2,"projectId":2,"userId":3,"firstDay":"2015-05-17","lastDay":"2015-05-18","info":"allocation info"}
+
+Stop the registration server.
+
+Create an allocation using Project B's id. The call should fail because there is no cached result for Project B.
+curl -i -XPOST -H"Content-Type: application/json" localhost:8081/allocations/ -d'{"projectId": 3, "userId": 3, "firstDay": "2015-05-17", "lastDay": "2015-05-18"}'
+
+Create an allocation using Project A's id. The call should succeed because there is a cached result for Project A.
+curl -i -XPOST -H"Content-Type: application/json" localhost:8081/allocations/ -d'{"projectId": 2, "userId": 3, "firstDay": "2015-05-17", "lastDay": "2015-05-18"}'
+{"id":3,"projectId":2,"userId":3,"firstDay":"2015-05-17","lastDay":"2015-05-18","info":"allocation info"}
+
+
+Redo project B allocation after restarting
+{"id":4,"projectId":3,"userId":3,"firstDay":"2015-05-17","lastDay":"2015-05-18","info":"allocation info"}
+
+
+curl -i localhost:8082/backlog?projectId=3
+
+
+
+
+./gradlew platform-services:eureka-server:bootRun
+./gradlew applications:allocations-server:bootRun
+./gradlew applications:backlog-server:bootRun
+./gradlew applications:timesheets-server:bootRun
+./gradlew applications:registration-server:bootRun
+
+
+cf create-service p-circuit-breaker-dashboard standard tracker-circuit-breaker-dashboard
+
+
+./gradlew submitCloudNativeDeveloperDistributedSystemWithCircuitBreaker \
+    -PregistrationServerUrl=https://registration-pal-cj.apps.pikes.pal.pivotal.io \
+    -PbacklogServerUrl=https://backlog-pal-cj.apps.pikes.pal.pivotal.io \
+    -PallocationsServerUrl=https://allocations-pal-cj.apps.pikes.pal.pivotal.io \
+    -PtimesheetsServerUrl=https://timesheets-pal-cj.apps.pikes.pal.pivotal.io
+
+
+http://allocations-pal-cj.apps.pikes.pal.pivotal.io/allocations?projectId=3
+
+
+
+
+ curl -i allocations-pal-cj.apps.pikes.pal.pivotal.io/allocations?projectId=3
+curl -i -XPOST -H"Content-Type: application/json" registration-pal-cj.apps.pikes.pal.pivotal.io/registration -d'{"name": "Conan"}'
+{"id":16,"name":"Conan","info":"registration info"}
+
+curl -i registration-pal-cj.apps.pikes.pal.pivotal.io/accounts?ownerId=16
+[{"id":13,"ownerId":16,"name":"Conan's account","info":"account info"}]
+
+
+curl -i -XPOST -H"Content-Type: application/json" registration-pal-cj.apps.pikes.pal.pivotal.io/projects -d'{"name": "Project ConanA", "accountId": 13}'
+curl -i -XPOST -H"Content-Type: application/json" registration-pal-cj.apps.pikes.pal.pivotal.io/projects -d'{"name": "Project ConanB", "accountId": 13}'
+{"id":16,"accountId":13,"name":"Project ConanA","active":true,"info":"project info"}
+{"id":19,"accountId":13,"name":"Project ConanB","active":true,"info":"project info"}
+
+
+curl -i -XPOST -H"Content-Type: application/json" allocations-pal-cj.apps.pikes.pal.pivotal.io/allocations/ -d'{"projectId": 16, "userId": 13, "firstDay": "2015-05-17", "lastDay": "2015-05-18"}'
+{"id":2,"projectId":2,"userId":3,"firstDay":"2015-05-17","lastDay":"2015-05-18","info":"allocation info"}
+
+
+
+curl 'http://localhost:8999/oauth/token' -i -u 'tracker-client:supersecret' -X POST -H 'Accept: application/json' -H 'Content-Type: application/x-www-form-urlencoded' -d 'grant_type=client_credentials&response_type=token&token_format=opaque'
+
+
+{"access_token":"(BEARER TOKEN)","token_type":"bearer","expires_in":43199,"scope":"openid"}
+
+
+curl localhost:8083 -H"Authorization: Bearer <your-token>"
+
+
+
+curl -i -XPOST -H"Authorization: 'Bearer 9f1e9796-6246-4660-abed-c2e4d03f0689'; Content-Type: 'application/json';" localhost:8081/allocations/ -d'{"projectId": 3, "userId": 3, "firstDay": "2015-05-17", "lastDay": "2015-05-18"}'
+
+curl -i -XPOST -H"Authorization: Bearer 9f1e9796-6246-4660-abed-c2e4d03f0689" localhost:8081/allocations/ -d'{"projectId": 3, "userId": 3, "firstDay": "2015-05-17", "lastDay": "2015-05-18"}'
+
+
+curl -i -XPOST -H"Authorization: Bearer 9f1e9796-6246-4660-abed-c2e4d03f0689" -H"Content-Type: application/json" localhost:8081/allocations/ -d'{"projectId": 3, "userId": 3, "firstDay": "2015-05-17", "lastDay": "2015-05-18"}'
+
+
+curl -i localhost:8082/stories?projectId=3 -H"Authorization: Bearer 9f1e9796-6246-4660-abed-c2e4d03f0689"
+
+  "p-identity": [
+   {
+    "credentials": {
+     "auth_domain": "https://p-identity.login.sys.pikes.pal.pivotal.io",
+     "client_id": "(CLIENT ID)",
+     "client_secret": "(CLIENT SECRET)"
+    },
+    "label": "p-identity",
+    "name": "tracker-sso",
+    "plan": "p-identity",
+    "provider": null,
+    "syslog_drain_url": null,
+    "tags": [],
+    "volume_mounts": []
+   }
+
+
+
+curl -k 'https://p-identity.login.YOUR_CF_SYS_URL/oauth/token' -i -u 'YOUR_CLIENT_ID:YOUR_CLIENT_SECRET' -X POST -H 'Accept: application/json' -H 'Content-Type: application/x-www-form-urlencoded' -d 'grant_type=client_credentials&response_type=token'
+
+
+
+
+
+{"access_token":"(TOKEN)","token_type":"bearer","expires_in":43199,"scope":"uaa.resource","jti":"(JTI SOMETHING)"}
+
+registration-pal-cj.apps.pikes.pal.pivotal.io
+name                   requested state   instances   memory   disk   urls
+tracker-allocations    started           1/1         1G       1G     allocations-pal-cj.apps.pikes.pal.pivotal.io
+tracker-backlog        started           1/1         1G       1G     backlog-pal-cj.apps.pikes.pal.pivotal.io
+tracker-registration   started           1/1         1G       1G     registration-pal-cj.apps.pikes.pal.pivotal.io
+tracker-timesheets     started           1/1         1G       1G     timesheets-pal-cj.apps.pikes.pal.pivotal.io
+
+cd ~/workspace/assignment-submission
+./gradlew submitCloudNativeDeveloperDistributedSystemWithSecurity \
+    -PregistrationServerUrl=https://<registration-app-url> \
+    -PbacklogServerUrl=https://<backlog-app-url> \
+    -PallocationsServerUrl=https://<allocations-app-url> \
+    -PtimesheetsServerUrl=https://<timesheets-app-url> \
+    -PactuatorUsername=actuator \
+    -PactuatorPassword=operations4red
+
+
+./gradlew submitCloudNativeDeveloperDistributedSystemWithSecurity \
+    -PregistrationServerUrl=https://registration-pal-cj.apps.pikes.pal.pivotal.io \
+    -PbacklogServerUrl=https://backlog-pal-cj.apps.pikes.pal.pivotal.io \
+    -PallocationsServerUrl=https://allocations-pal-cj.apps.pikes.pal.pivotal.io \
+    -PtimesheetsServerUrl=https://timesheets-pal-cj.apps.pikes.pal.pivotal.io \
+    -PactuatorUsername=actuator \
+    -PactuatorPassword=operations4red
+
